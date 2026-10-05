@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireOrganization } from '@/lib/auth'
 import { weekdays, time } from '@/lib/operations'
-import { addSchedule, enrollStudent, setEnrollment } from '@/app/operations'
+import { addSchedule, enrollStudent, setEnrollment, setScheduleActive, updateClass } from '@/app/operations'
 
 export default async function ClassDetail({ params, searchParams }: {
   params: Promise<{ organizationId: string; classId: string }>
@@ -11,24 +11,27 @@ export default async function ClassDetail({ params, searchParams }: {
   const { organizationId: org, classId } = await params
   const { erro, sucesso } = await searchParams
   const { supabase, membership } = await requireOrganization(org)
-  const [{ data: swimClass }, { data: schedules, error: schedulesError }, { data: enrollments, error: enrollmentsError }, { data: pools }, { data: lanes }, { data: students }] = await Promise.all([
-    supabase.from('swim_classes').select('id,name,capacity,active,teachers(full_name)').eq('organization_id', org).eq('id', classId).maybeSingle(),
+  const [{ data: swimClass }, { data: schedules, error: schedulesError }, { data: enrollments, error: enrollmentsError }, { data: pools }, { data: lanes }, { data: students }, { data: teachers }] = await Promise.all([
+    supabase.from('swim_classes').select('id,name,teacher_id,capacity,active,teachers(full_name)').eq('organization_id', org).eq('id', classId).maybeSingle(),
     supabase.from('class_schedules').select('id,weekday,starts_at,ends_at,active,pools(name),lanes(name)').eq('organization_id', org).eq('class_id', classId).order('weekday').order('starts_at'),
     supabase.from('class_enrollments').select('id,student_id,active,students(full_name)').eq('organization_id', org).eq('class_id', classId).order('enrolled_at'),
     membership.role === 'teacher' ? Promise.resolve({ data: [] }) : supabase.from('pools').select('id,name').eq('organization_id', org).eq('active', true).order('name'),
     membership.role === 'teacher' ? Promise.resolve({ data: [] }) : supabase.from('lanes').select('id,pool_id,name').eq('organization_id', org).eq('active', true).order('name'),
     membership.role === 'teacher' ? Promise.resolve({ data: [] }) : supabase.from('students').select('id,full_name').eq('organization_id', org).eq('status', 'active').order('full_name'),
+    membership.role === 'teacher' ? Promise.resolve({ data: [] }) : supabase.from('teachers').select('id,full_name,active').eq('organization_id', org).order('full_name'),
   ])
   if (!swimClass) notFound()
   const nameOf = (value: {full_name?: string} | {full_name?: string}[] | null) => Array.isArray(value) ? value[0]?.full_name : value?.full_name
   const activeCount = enrollments?.filter(e => e.active).length ?? 0
   const available = students?.filter(s => !enrollments?.some(e => e.student_id === s.id && e.active))
   return <main className="shell"><header><div><Link className="back" href={`/dashboard/${org}/turmas`}>← Turmas</Link><span className="eyebrow">Operação</span><h1>{swimClass.name}</h1><p>{nameOf(swimClass.teachers)} · {activeCount}/{swimClass.capacity} alunos · {swimClass.active ? 'Ativa' : 'Inativa'}</p></div><Link className="back" href={`/dashboard/${org}/calendario`}>Ver calendário →</Link></header>
-    {(erro || schedulesError || enrollmentsError) && <p role="alert" className="error">{erro === 'conflito' ? 'Horário inválido ou raia ocupada nesse período.' : erro === 'vagas' ? 'Não há vaga ou o aluno já está inativo.' : 'Não foi possível carregar ou salvar os dados.'}</p>}
+    {(erro || schedulesError || enrollmentsError) && <p role="alert" className="error">{erro === 'conflito' ? 'Horário inválido ou raia ocupada nesse período.' : erro === 'vagas' ? 'Não há vaga ou o aluno já está inativo.' : erro === 'capacidade' ? 'A capacidade não pode ficar abaixo das matrículas ativas.' : erro === 'horarios' ? 'Desative os horários semanais antes de inativar a turma.' : 'Não foi possível carregar ou salvar os dados.'}</p>}
     {sucesso && <p className="success">Alteração salva.</p>}
+    {membership.role !== 'teacher' && <section className="card spacing"><h2>Dados da turma</h2><form className="form-row" action={updateClass.bind(null, org, classId)}><label>Nome<input name="name" defaultValue={swimClass.name} required minLength={2} maxLength={100} /></label><label>Professor<select name="teacher_id" defaultValue={swimClass.teacher_id} required>{teachers?.map(t => <option key={t.id} value={t.id}>{t.full_name}{t.active ? '' : ' · inativo'}</option>)}</select></label><label>Vagas<input type="number" name="capacity" defaultValue={swimClass.capacity} min={1} max={100} required /></label><label>Situação<select name="active" defaultValue={String(swimClass.active)}><option value="true">Ativa</option><option value="false">Inativa</option></select></label><button>Salvar turma</button></form></section>}
     <div className="columns">
       <section className="card"><h2>Horários semanais</h2>{!schedules?.length && <p>Nenhum horário cadastrado.</p>}
-        <ul className="list">{schedules?.map(s => <li key={s.id}><strong>{weekdays[s.weekday]} · {time(s.starts_at)}–{time(s.ends_at)}</strong><br />{Array.isArray(s.pools) ? s.pools[0]?.name : (s.pools as {name?: string} | null)?.name} · {Array.isArray(s.lanes) ? s.lanes[0]?.name : (s.lanes as {name?: string} | null)?.name}</li>)}</ul>
+        <ul className="list">{schedules?.map(s => <li key={s.id} className="inline-row"><span><strong>{weekdays[s.weekday]} · {time(s.starts_at)}–{time(s.ends_at)}</strong>{s.active ? '' : ' · inativo'}<br />{Array.isArray(s.pools) ? s.pools[0]?.name : (s.pools as {name?: string} | null)?.name} · {Array.isArray(s.lanes) ? s.lanes[0]?.name : (s.lanes as {name?: string} | null)?.name}</span>{membership.role !== 'teacher' && <form action={setScheduleActive.bind(null, org, classId, s.id, !s.active)}><button className="secondary">{s.active ? 'Desativar' : 'Reativar'}</button></form>}</li>)}</ul>
+        {membership.role !== 'teacher' && <p>Para mudar dia ou horário, desative o atual e cadastre outro. Aulas já abertas mantêm o histórico.</p>}
       </section>
       <section className="card"><h2>Alunos matriculados</h2>{!enrollments?.length && <p>Nenhum aluno matriculado.</p>}
         <ul className="list">{enrollments?.map(e => <li key={e.id} className="inline-row"><span>{nameOf(e.students)} {e.active ? '' : '(inativo)'}</span>{membership.role !== 'teacher' && <form action={setEnrollment.bind(null, org, classId, e.student_id, !e.active)}><button className="secondary">{e.active ? 'Retirar' : 'Reativar'}</button></form>}</li>)}</ul>

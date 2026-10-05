@@ -57,6 +57,43 @@ export async function createRecord(orgId: string, entity: string, form: FormData
   redirect(`${url}?sucesso=1`)
 }
 
+export async function updateRecord(orgId: string, entity: string, rowId: string, form: FormData) {
+  if (![orgId, rowId].every(id => uuid.safeParse(id).success) || !entitySchema.safeParse(entity).success) redirect('/dashboard')
+  const { supabase, membership } = await requireOrganization(orgId)
+  const url = `/dashboard/${orgId}/${entity}`
+  if (membership.role === 'teacher' || (entity === 'professores' && membership.role !== 'admin')) redirect(url)
+
+  const parsedName = name.safeParse(form.get('full_name'))
+  if (!parsedName.success) redirect(`${url}?erro=dados`)
+  let table: 'students' | 'guardians' | 'teachers'
+  let payload: Record<string, string | boolean | null> = { full_name: parsedName.data }
+
+  if (entity === 'alunos') {
+    const birth = z.union([z.iso.date(), z.literal('')]).safeParse(form.get('birth_date'))
+    const status = z.enum(['active','inactive']).safeParse(form.get('status'))
+    if (!birth.success || !status.success) redirect(`${url}?erro=dados`)
+    table = 'students'
+    payload = { ...payload, birth_date: birth.data || null, status: status.data }
+  } else {
+    const extra = z.object({
+      email: z.union([z.email(), z.literal('')]),
+      phone: optionalText,
+    }).safeParse({ email: form.get('email'), phone: form.get('phone') })
+    if (!extra.success) redirect(`${url}?erro=dados`)
+    table = entity === 'professores' ? 'teachers' : 'guardians'
+    payload = { ...payload, email: extra.data.email || null, phone: extra.data.phone || null }
+    if (entity === 'professores') {
+      const active = z.enum(['true','false']).safeParse(form.get('active'))
+      if (!active.success) redirect(`${url}?erro=dados`)
+      payload.active = active.data === 'true'
+    }
+  }
+  const { data, error } = await supabase.from(table).update(payload)
+    .eq('organization_id', orgId).eq('id', rowId).select('id').maybeSingle()
+  if (error || !data) redirect(`${url}?erro=salvar`)
+  redirect(`${url}?sucesso=1`)
+}
+
 export async function linkGuardian(orgId: string, form: FormData) {
   if (!uuid.safeParse(orgId).success) redirect('/dashboard')
   const url = `/dashboard/${orgId}/alunos`

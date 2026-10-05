@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createRecord, linkGuardian } from '@/app/actions'
+import { createRecord, linkGuardian, updateRecord } from '@/app/actions'
 import { requireOrganization } from '@/lib/auth'
 
 const entities = {
@@ -19,7 +19,7 @@ export default async function EntityPage({ params, searchParams }: {
   const { supabase, membership } = await requireOrganization(organizationId)
   if (membership.role === 'teacher') redirect(`/dashboard/${organizationId}`)
   const { erro, sucesso } = await searchParams
-  const { data: rows, error } = await supabase.from(info.table).select('id, full_name, created_at')
+  const { data: rows, error } = await supabase.from(info.table).select('*')
     .eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(100)
   let students: { id: string, full_name: string }[] = []
   let guardians: { id: string, full_name: string }[] = []
@@ -48,7 +48,22 @@ export default async function EntityPage({ params, searchParams }: {
       </section>}
       <section className="card"><h2>Cadastros recentes</h2>
         {error ? <p role="alert" className="error">Não foi possível carregar os cadastros.</p> :
-        rows?.length ? <ul className="list">{rows.map((row) => <li key={row.id}>{row.full_name}</li>)}</ul> : <p>Nenhum cadastro ainda.</p>}
+        rows?.length ? <ul className="list">{rows.map((row) => <li key={row.id}>
+          <details><summary>{row.full_name}{entity === 'alunos' && row.status === 'inactive' ? ' · inativo' : ''}{entity === 'professores' && row.active === false ? ' · inativo' : ''}</summary>
+            {(entity !== 'professores' || membership.role === 'admin') && <form action={updateRecord.bind(null, organizationId, entity, row.id)} className="stack edit-form">
+              <label>Nome completo<input name="full_name" defaultValue={row.full_name} required minLength={2} maxLength={120} /></label>
+              {entity === 'alunos' ? <>
+                <label>Data de nascimento<input name="birth_date" type="date" defaultValue={row.birth_date || ''} /></label>
+                <label>Situação<select name="status" defaultValue={row.status}><option value="active">Ativo</option><option value="inactive">Inativo</option></select></label>
+              </> : <>
+                <label>Telefone<input name="phone" type="tel" defaultValue={row.phone || ''} maxLength={200} /></label>
+                <label>E-mail<input name="email" type="email" defaultValue={row.email || ''} /></label>
+                {entity === 'professores' && <label>Situação<select name="active" defaultValue={String(row.active)}><option value="true">Ativo</option><option value="false">Inativo</option></select></label>}
+              </>}
+              <button type="submit">Salvar alterações</button>
+            </form>}
+          </details>
+        </li>)}</ul> : <p>Nenhum cadastro ainda.</p>}
       </section>
     </div>
     {entity === 'alunos' && <section className="card spacing"><h2>Vincular responsável a aluno</h2>

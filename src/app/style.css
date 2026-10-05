@@ -8,4 +8,5 @@ header{display:flex;justify-content:space-between;align-items:flex-start;gap:20p
 input,select{width:100%;padding:11px 12px;border:1px solid #b8ced5;border-radius:9px;font:inherit;background:white;color:var(--ink)}input[type=checkbox]{width:auto}input:focus,select:focus{outline:2px solid #63c5d5;outline-offset:1px}
 button{cursor:pointer;background:var(--water);color:#fff;border:1px solid var(--water);border-radius:9px;padding:11px 18px;font:inherit;font-weight:700}button:hover{background:#075d70}button:disabled{opacity:.5;cursor:not-allowed}.secondary{background:white;color:var(--water)}.secondary:hover{background:var(--pale)}
 .error,.success{padding:12px 15px;border-radius:9px}.error{background:#fff0ef;color:#9d2925}.success{background:#e6f8ee;color:#196d42}.list{list-style:none;margin:0;padding:0}.list li{padding:12px 0;border-bottom:1px solid var(--line)}
+.list summary{cursor:pointer;font-weight:600}.edit-form{margin-top:16px;padding:16px;background:var(--pale);border-radius:10px}
 @media(max-width:720px){.shell{padding:26px 16px}.columns{grid-template-columns:1fr}header{align-items:flex-start}.card{padding:22px}}

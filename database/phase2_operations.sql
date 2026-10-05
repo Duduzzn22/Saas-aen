@@ -48,7 +48,6 @@ create table public.class_schedules (
   active boolean not null default true,
   check (starts_at < ends_at),
   foreign key (organization_id,class_id) references public.swim_classes(organization_id,id) on delete restrict,
-  foreign key (organization_id,pool_id) references public.pools(organization_id,id) on delete restrict,
   foreign key (organization_id,pool_id,lane_id) references public.lanes(organization_id,pool_id,id) on delete restrict,
   unique (organization_id,class_id,id),
   constraint lane_weekly_no_overlap exclude using gist (
@@ -84,7 +83,6 @@ create table public.class_sessions (
   ends_at time not null,
   status text not null default 'scheduled' check (status in ('scheduled','cancelled')),
   created_at timestamptz not null default now(),
-  foreign key (organization_id,class_id) references public.swim_classes(organization_id,id) on delete restrict,
   foreign key (organization_id,class_id,schedule_id) references public.class_schedules(organization_id,class_id,id) on delete restrict,
   unique (organization_id,class_id,id),
   unique (organization_id,schedule_id,lesson_date),

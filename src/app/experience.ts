@@ -114,6 +114,21 @@ export async function requestTrial(org: string, form: FormData) {
   redirect(`${url}?sucesso=1`)
 }
 
+export async function createStaffTrial(org: string, form: FormData) {
+  if (!id.safeParse(org).success) redirect('/dashboard')
+  const url = school(org, 'experimentais')
+  const { supabase, membership, userId } = await requireOrganization(org)
+  if (membership.role === 'teacher') redirect(url)
+  const parsed = z.object({ prospect_name: z.string().trim().min(2).max(120), contact_name: z.string().trim().min(2).max(120),
+    contact_email: z.email(), contact_phone: z.string().trim().max(40), preferred_date: z.union([day,z.literal('')]),
+    note: z.string().trim().max(500) }).safeParse(Object.fromEntries(form))
+  if (!parsed.success) redirect(`${url}?erro=dados`)
+  const { error } = await supabase.from('trial_requests').insert({ organization_id: org, requested_by: userId,
+    ...parsed.data, preferred_date: parsed.data.preferred_date || null })
+  if (error) redirect(`${url}?erro=salvar`)
+  redirect(`${url}?sucesso=1`)
+}
+
 export async function reviewTrial(org: string, requestId: string, form: FormData) {
   if (![org,requestId].every(x => id.safeParse(x).success)) redirect('/dashboard')
   const url = school(org, 'experimentais')

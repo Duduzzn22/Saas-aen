@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireOrganization } from '@/lib/auth'
 import { displayDate, todayInSaoPaulo } from '@/lib/operations'
-import { reviewTrial } from '@/app/experience'
+import { createStaffTrial, reviewTrial } from '@/app/experience'
 
 export default async function Trials({params,searchParams}: {params:Promise<{organizationId:string}>;searchParams:Promise<{erro?:string;sucesso?:string}>}) {
   const {organizationId:org} = await params
@@ -18,7 +18,13 @@ export default async function Trials({params,searchParams}: {params:Promise<{org
   return <main className="shell"><header><div><Link className="back" href={`/dashboard/${org}`}>← Escola</Link><span className="eyebrow">Atendimento</span><h1>Aulas experimentais</h1><p>Entre em contato para combinar a turma. Abra a aula no calendário antes de confirmar.</p></div><Link className="secondary nav-button" href={`/dashboard/${org}/calendario`}>Abrir calendário</Link></header>
     {(erro || error) && <p role="alert" className="error">Não foi possível atualizar o pedido. Confira a data e as vagas.</p>}
     {sucesso && <p className="success">Pedido atualizado.</p>}
-    <section className="card"><h2>Solicitações</h2>{!requests?.length && <p>Nenhuma solicitação.</p>}
+    <section className="card"><h2>Registrar interessado</h2><form className="stack" action={createStaffTrial.bind(null,org)}>
+      <div className="columns"><label>Nome da criança<input name="prospect_name" required maxLength={120} /></label><label>Nome do contato<input name="contact_name" required maxLength={120} /></label></div>
+      <div className="columns"><label>E-mail<input name="contact_email" type="email" required /></label><label>Telefone<input name="contact_phone" maxLength={40} /></label></div>
+      <label>Data preferida<input name="preferred_date" type="date" min={todayInSaoPaulo()} /></label>
+      <label>Observação<textarea name="note" maxLength={500} /></label><button>Registrar pedido</button>
+    </form></section>
+    <section className="card spacing"><h2>Solicitações</h2>{!requests?.length && <p>Nenhuma solicitação.</p>}
       <ul className="list">{requests?.map(r => <li key={r.id}><strong>{r.prospect_name}</strong> · {r.status === 'pending' ? 'Pendente' : r.status === 'scheduled' ? 'Agendada' : r.status === 'completed' ? 'Concluída' : 'Cancelada'}
         <p>Contato: {r.contact_name} · {r.contact_email}{r.contact_phone ? ` · ${r.contact_phone}` : ''}{r.preferred_date ? ` · Preferência: ${displayDate(r.preferred_date)}` : ''}</p>
         {r.note && <p>Observação: {r.note}</p>}{r.session_id && <p><Link className="back" href={`/dashboard/${org}/aulas/${r.session_id}`}>Ver aula agendada →</Link></p>}

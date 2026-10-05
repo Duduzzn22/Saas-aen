@@ -20,6 +20,17 @@ export async function signIn(form: FormData) {
   redirect('/dashboard')
 }
 
+export async function signUp(form: FormData) {
+  const parsed = z.object({ email: z.email(), password: z.string().min(8).max(72) })
+    .safeParse(Object.fromEntries(form))
+  if (!parsed.success) redirect('/cadastro?erro=dados')
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signUp(parsed.data)
+  if (error) redirect('/cadastro?erro=salvar')
+  redirect(data.session ? '/portal/acesso' : '/login?cadastro=1')
+}
+
 export async function signOut() {
   const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()

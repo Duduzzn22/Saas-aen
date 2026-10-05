@@ -213,7 +213,12 @@ export async function markAttendance(org: string, sessionId: string, studentId: 
   if (!session || session.status !== 'scheduled') fail(url, 'aula')
   const { data: enrolled } = await supabase.from('class_enrollments').select('id')
     .eq('organization_id', org).eq('class_id', session.class_id).eq('student_id', studentId).eq('active', true).maybeSingle()
-  if (!enrolled) fail(url, 'aluno')
+  if (!enrolled) {
+    const { data: makeup } = await supabase.from('makeup_requests').select('id')
+      .eq('organization_id', org).eq('target_session_id', sessionId).eq('student_id', studentId)
+      .eq('status', 'approved').maybeSingle()
+    if (!makeup) fail(url, 'aluno')
+  }
   const { error } = await supabase.from('attendance').upsert({
     organization_id: org, class_id: session.class_id, session_id: sessionId,
     student_id: studentId, status: status.data, recorded_by: userId, recorded_at: new Date().toISOString(),

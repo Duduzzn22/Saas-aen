@@ -14,5 +14,5 @@ export async function requireOrganization(organizationId: string) {
     .select('role, full_name, organization_id')
     .eq('organization_id', organizationId).eq('user_id', userId).eq('active', true).maybeSingle()
   if (!membership) redirect('/dashboard')
-  return { supabase, membership }
+  return { supabase, membership, userId }
 }

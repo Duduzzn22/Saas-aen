@@ -2,7 +2,7 @@
 
 Início da **Fase 1 — Base**, seguindo o planejamento de seis fases. Este repositório contém uma aplicação Next.js com Supabase Auth, cadastros iniciais e um esquema SQL preparado para separar organizações.
 
-## Entregue neste primeiro incremento
+## Fase 1 — Base
 
 - Login por e-mail e senha; sessão com cookies e verificação de token no servidor.
 - Seleção da escola vinculada ao usuário; papéis `admin`, `reception` e `teacher` por escola.
@@ -11,7 +11,7 @@ Início da **Fase 1 — Base**, seguindo o planejamento de seis fases. Este repo
 - Auditoria de inclusões e alterações nos três cadastros principais.
 - Layout adaptado a celular e desktop.
 
-O professor tem acesso ao painel, mas turmas e chamada pertencem à Fase 2. A gestão de convites, importação de planilhas, backups e validação com uma escola real ainda estão pendentes. Edição e inativação de alunos, responsáveis e professores já estão disponíveis. O esquema SQL foi aplicado ao projeto Supabase da escola piloto Aquafit Lidice.
+O professor vinculado a uma conta de membro pode acessar suas turmas e chamadas. A gestão de convites, importação de planilhas, backups e validação com uma escola real ainda estão pendentes. Edição e inativação de alunos, responsáveis e professores já estão disponíveis. O esquema SQL foi aplicado ao projeto Supabase da escola piloto Aquafit Lidice.
 
 ## Executar localmente
 
@@ -59,3 +59,11 @@ Rode `npm run typecheck`, `npm run lint` e `npm run build` antes de publicar. Co
 O projeto `saas-aen` está conectado ao ramo `main` deste repositório. Em **Project Settings > Environment Variables**, configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` para **Production**. O arquivo `.env.local` é apenas para desenvolvimento local e não é enviado ao deploy. Após mudar as variáveis, faça um novo deploy para que a versão publicada as receba.
 
 O endereço de produção é https://saas-aen.vercel.app/. No Supabase Auth, inclua esse endereço como Site URL e configure os Redirect URLs pertinentes quando os fluxos de confirmação de e-mail e recuperação de senha forem usados.
+
+## Fase 2 — Operação
+
+Piscinas e raias são cadastradas pelo administrador. Administração e recepção criam turmas, vinculam professores, definem capacidade, horários semanais e matrículas. O calendário gera ocorrências para quatro semanas a partir da semana exibida, sem duplicar aulas existentes. A chamada registra presença, ausência ou justificativa por aluno; aulas podem ser canceladas. Professores com conta vinculada veem apenas suas turmas e podem fazer a chamada.
+
+Em um projeto novo, aplique `database/phase1_foundation.sql` e depois, nesta ordem, `database/phase2_operations.sql`, `database/phase2_indexes.sql` e `database/phase2_relations.sql`. No projeto piloto, estas migrações já foram aplicadas. A agenda semanal impede sobreposição na mesma raia, e matrículas respeitam a capacidade da turma. O professor precisa de uma conta Auth, de um vínculo `memberships` com papel `teacher` e de um vínculo ao cadastro de professor na interface.
+
+Limites atuais: as aulas são geradas sob demanda; não há geração automática contínua, férias, reposições ou edição de horário de uma turma. Esses fluxos serão desenvolvidos em incrementos seguintes.

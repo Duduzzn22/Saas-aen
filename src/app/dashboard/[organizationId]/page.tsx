@@ -11,7 +11,10 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
     <div className="grid">
       {allowed ? ([['alunos','Alunos','Cadastros e dados básicos'],['responsaveis','Responsáveis','Contatos dos alunos'],['professores','Professores','Equipe da escola']] as const).map(([route,label,detail]) =>
         <Link className="card tile" href={`/dashboard/${organizationId}/${route}`} key={route}><h2>{label}</h2><p>{detail}</p><strong>Abrir →</strong></Link>) :
-        <div className="card"><h2>Área do professor</h2><p>Suas turmas e chamadas serão liberadas na Fase 2.</p></div>}
+        <div className="card"><h2>Área do professor</h2><p>Acompanhe suas turmas, aulas e chamadas.</p></div>}
+      {membership.role === 'admin' && <Link className="card tile" href={`/dashboard/${organizationId}/instalacoes`}><h2>Piscinas e raias</h2><p>Organize os espaços de aula.</p><strong>Abrir →</strong></Link>}
+      <Link className="card tile" href={`/dashboard/${organizationId}/turmas`}><h2>Turmas</h2><p>Professores, horários e matrículas.</p><strong>Abrir →</strong></Link>
+      <Link className="card tile" href={`/dashboard/${organizationId}/calendario`}><h2>Calendário e presença</h2><p>Consulte aulas e registre a chamada.</p><strong>Abrir →</strong></Link>
     </div>
   </main>
 }

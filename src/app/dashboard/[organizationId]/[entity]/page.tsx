@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { createRecord, linkGuardian, updateRecord } from '@/app/actions'
+import { assignTeacherAccount, createRecord, linkGuardian, updateRecord } from '@/app/actions'
 import { requireOrganization } from '@/lib/auth'
 
 const entities = {
@@ -23,12 +23,18 @@ export default async function EntityPage({ params, searchParams }: {
     .eq('organization_id', organizationId).order('created_at', { ascending: false }).limit(100)
   let students: { id: string, full_name: string }[] = []
   let guardians: { id: string, full_name: string }[] = []
+  let teacherMembers: { user_id: string, full_name: string }[] = []
   if (entity === 'alunos') {
     const [s, g] = await Promise.all([
       supabase.from('students').select('id,full_name').eq('organization_id',organizationId).order('full_name').limit(500),
       supabase.from('guardians').select('id,full_name').eq('organization_id',organizationId).order('full_name').limit(500),
     ])
     students = s.data || []; guardians = g.data || []
+  }
+  if (entity === 'professores' && membership.role === 'admin') {
+    const { data } = await supabase.from('memberships').select('user_id,full_name')
+      .eq('organization_id', organizationId).eq('role', 'teacher').eq('active', true).order('full_name')
+    teacherMembers = data || []
   }
 
   return <main className="shell">
@@ -61,6 +67,11 @@ export default async function EntityPage({ params, searchParams }: {
                 {entity === 'professores' && <label>Situação<select name="active" defaultValue={String(row.active)}><option value="true">Ativo</option><option value="false">Inativo</option></select></label>}
               </>}
               <button type="submit">Salvar alterações</button>
+            </form>}
+            {entity === 'professores' && membership.role === 'admin' && <form action={assignTeacherAccount.bind(null, organizationId, row.id)} className="stack edit-form">
+              <strong>Acesso do professor</strong><p>Vincule uma conta já criada no Supabase e adicionada como membro professor desta escola.</p>
+              <label>Conta<select name="user_id" defaultValue={row.user_id || ''} required><option value="" disabled>Selecione</option>{teacherMembers.map(m => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}</select></label>
+              <button disabled={!teacherMembers.length}>Vincular conta</button>
             </form>}
           </details>
         </li>)}</ul> : <p>Nenhum cadastro ainda.</p>}

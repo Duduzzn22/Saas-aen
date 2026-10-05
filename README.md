@@ -67,3 +67,9 @@ Piscinas e raias são cadastradas pelo administrador. Administração e recepç�
 Em um projeto novo, aplique `database/phase1_foundation.sql` e depois, nesta ordem, `database/phase2_operations.sql`, `database/phase2_indexes.sql` e `database/phase2_relations.sql`. No projeto piloto, estas migrações já foram aplicadas. A agenda semanal impede sobreposição na mesma raia, e matrículas respeitam a capacidade da turma. O professor precisa de uma conta Auth, de um vínculo `memberships` com papel `teacher` e de um vínculo ao cadastro de professor na interface.
 
 Para mudar um horário, desative o antigo e cadastre outro. Aulas já abertas preservam a data, o horário e a presença. Piscinas, raias e turmas podem ser editadas e inativadas após desativar os horários ativos; a capacidade não pode cair abaixo do número de matrículas ativas.\n\nAplique também `database/phase2_schedule_management.sql` após as três migrações da Fase 2. No projeto piloto, ela já foi aplicada. Férias, reposições e exceções por data ainda pertencem a incrementos seguintes.
+
+## Fase 3 — Pedagógico
+
+O administrador configura níveis ordenados e habilidades por escola. Na ficha do aluno, administração e professores de turmas com matrícula ativa podem atribuir um novo nível e registrar avaliações por habilidade. Recepção pode consultar o histórico, sem alterar avaliações. Cada avaliação registra todos os resultados em uma transação, preservando versões anteriores; a mudança de nível é registrada em histórico e não ocorre automaticamente.
+
+Em um projeto novo, após as migrações das fases anteriores, aplique `database/phase3_pedagogy.sql` e `database/phase3_level_guard.sql`. No projeto piloto, elas já foram aplicadas. O acesso do professor depende de sua conta estar vinculada ao cadastro de professor e de uma matrícula ativa do aluno em sua turma.

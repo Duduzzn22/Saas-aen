@@ -56,6 +56,7 @@ export default async function EntityPage({ params, searchParams }: {
         {error ? <p role="alert" className="error">Não foi possível carregar os cadastros.</p> :
         rows?.length ? <ul className="list">{rows.map((row) => <li key={row.id}>
           <details><summary>{row.full_name}{entity === 'alunos' && row.status === 'inactive' ? ' · inativo' : ''}{entity === 'professores' && row.active === false ? ' · inativo' : ''}</summary>
+            {entity === 'alunos' && <Link className="back spacing" href={`/dashboard/${organizationId}/alunos/${row.id}`}>Ver evolução →</Link>}
             {(entity !== 'professores' || membership.role === 'admin') && <form action={updateRecord.bind(null, organizationId, entity, row.id)} className="stack edit-form">
               <label>Nome completo<input name="full_name" defaultValue={row.full_name} required minLength={2} maxLength={120} /></label>
               {entity === 'alunos' ? <>

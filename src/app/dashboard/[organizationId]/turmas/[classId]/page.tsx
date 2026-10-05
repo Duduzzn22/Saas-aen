@@ -34,7 +34,7 @@ export default async function ClassDetail({ params, searchParams }: {
         {membership.role !== 'teacher' && <p>Para mudar dia ou horário, desative o atual e cadastre outro. Aulas já abertas mantêm o histórico.</p>}
       </section>
       <section className="card"><h2>Alunos matriculados</h2>{!enrollments?.length && <p>Nenhum aluno matriculado.</p>}
-        <ul className="list">{enrollments?.map(e => <li key={e.id} className="inline-row"><span>{nameOf(e.students)} {e.active ? '' : '(inativo)'}</span>{membership.role !== 'teacher' && <form action={setEnrollment.bind(null, org, classId, e.student_id, !e.active)}><button className="secondary">{e.active ? 'Retirar' : 'Reativar'}</button></form>}</li>)}</ul>
+        <ul className="list">{enrollments?.map(e => <li key={e.id} className="inline-row"><Link className="back" href={`/dashboard/${org}/alunos/${e.student_id}`}>{nameOf(e.students)} {e.active ? '' : '(inativo)'} →</Link>{membership.role !== 'teacher' && <form action={setEnrollment.bind(null, org, classId, e.student_id, !e.active)}><button className="secondary">{e.active ? 'Retirar' : 'Reativar'}</button></form>}</li>)}</ul>
       </section>
     </div>
     {membership.role !== 'teacher' && swimClass.active && <div className="columns spacing">

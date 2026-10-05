@@ -11,7 +11,7 @@ Início da **Fase 1 — Base**, seguindo o planejamento de seis fases. Este repo
 - Auditoria de inclusões e alterações nos três cadastros principais.
 - Layout adaptado a celular e desktop.
 
-O professor tem acesso ao painel, mas turmas e chamada pertencem à Fase 2. A gestão de convites, edição de registros, importação de planilhas, backups e validação com uma escola real ainda estão pendentes nesta fase. O SQL é um **rascunho de implantação**, não foi aplicado a um banco neste ambiente.
+O professor tem acesso ao painel, mas turmas e chamada pertencem à Fase 2. A gestão de convites, importação de planilhas, backups e validação com uma escola real ainda estão pendentes. Edição e inativação de alunos, responsáveis e professores já estão disponíveis. O esquema SQL foi aplicado ao projeto Supabase da escola piloto Aquafit Lidice.
 
 ## Executar localmente
 
@@ -45,11 +45,17 @@ Para adicionar outro membro nesta etapa, crie a conta em Authentication e insira
 4. Cadastre um aluno e um responsável da escola A; tente vinculá-los a registros da escola B. As chaves compostas devem rejeitar a operação.
 5. Confira os registros de `audit_logs` após criar e alterar um cadastro. Teste restauração do projeto antes da implantação piloto.
 
-Rode `npm run typecheck`, `npm run lint` e `npm run build` antes de publicar. Configure backups, domínio e implantação apenas após aprovar a escola piloto e revisar as políticas. O fluxo de recuperação de senha e convites administrativos será adicionado no próximo incremento da Fase 1.
+Rode `npm run typecheck`, `npm run lint` e `npm run build` antes de publicar. Configure backups e revise as políticas antes de usar dados reais. O fluxo de recuperação de senha e convites administrativos será adicionado no próximo incremento da Fase 1.
 
 ## Próxima entrega da Fase 1
 
 - Convites de usuários e vínculo seguro a uma escola.
-- Edição e inativação de cadastros com trilha de auditoria.
+- Revisão do fluxo de edição e inativação com a escola piloto.
 - Ficha detalhada do aluno e do responsável, com dados mínimos necessários ao piloto.
 - Testes reais de RLS em dois locatários, importação inicial e rotina de backup.
+
+## Publicação na Vercel
+
+O projeto `saas-aen` está conectado ao ramo `main` deste repositório. Em **Project Settings > Environment Variables**, configure `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` para **Production**. O arquivo `.env.local` é apenas para desenvolvimento local e não é enviado ao deploy. Após mudar as variáveis, faça um novo deploy para que a versão publicada as receba.
+
+O endereço de produção é https://saas-aen.vercel.app/. No Supabase Auth, inclua esse endereço como Site URL e configure os Redirect URLs pertinentes quando os fluxos de confirmação de e-mail e recuperação de senha forem usados.

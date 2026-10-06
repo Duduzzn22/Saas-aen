@@ -23,7 +23,7 @@ export async function requireGuardianOrganization(organizationId: string) {
     .select('guardian_id').eq('organization_id', organizationId).eq('user_id', userId).eq('active', true)
   const guardianIds = links?.map(link => link.guardian_id) ?? []
   if (!guardianIds.length) redirect('/portal/acesso')
-  const { data: guardians } = await supabase.from('guardians').select('id,full_name')
+  const { data: guardians } = await supabase.from('guardians').select('id,full_name,phone')
     .eq('organization_id', organizationId).in('id', guardianIds)
   if (!guardians?.length) redirect('/portal/acesso')
   return { supabase, userId, guardians }

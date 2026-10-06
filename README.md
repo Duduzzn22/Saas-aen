@@ -9,6 +9,7 @@ Aplicação Next.js com Supabase para várias escolas, com dados separados por o
 - **Pedagógico:** níveis, habilidades, avaliações e histórico do aluno.
 - **Financeiro:** planos, mensalidades, pagamentos, inadimplência e relatórios.
 - **Experiência do cliente:** portal do responsável, pedidos de reposição, aulas experimentais e comunicados internos.
+- **Automação:** QR de presença, indicadores, conexão Mercado Pago por escola, PIX com conciliação e lembretes por WhatsApp autorizados.
 
 O portal exige e-mail confirmado que corresponda ao cadastro do responsável. A escola aprova o pedido de acesso no painel; apenas o responsável financeiro vê mensalidades. Reposições e experimentais dependem da análise da secretaria e de vagas na aula escolhida. Uma aula com visita confirmada não pode ser cancelada antes de resolver a reserva. As aulas experimentais aparecem na lista da aula, mas sua conclusão é registrada no módulo de atendimento; o prospecto ainda não é aluno matriculado.
 
@@ -29,6 +30,12 @@ Execute `npm run typecheck`, `npm run lint` e `npm run build`. O ambiente de exe
 
 Antes de usar com clientes, teste com duas escolas e contas distintas: a conta de uma escola não deve ler dados da outra; responsável sem aprovação não deve ver o aluno; responsável não financeiro não deve ver mensalidades; reposição e experimental não devem ultrapassar a capacidade da turma. Consulte os registros de auditoria e mantenha backups do banco.
 
-## Próxima fase
+## Ativar as integrações externas
 
-As integrações externas de pagamento, WhatsApp, QR Code e dashboards avançados pertencem à Fase 6.
+Os fluxos de QR Code e indicadores não exigem chaves externas. As ações de PIX e WhatsApp ficam desativadas até configurar as variáveis de `.env.example` como segredos de servidor na Vercel. Nunca use `NEXT_PUBLIC_` em tokens privados. Gere `MP_TOKEN_ENCRYPTION_KEY` com 32 bytes aleatórios em base64 e mantenha a mesma chave em todos os deploys; trocar a chave sem migrar os dados torna os tokens das escolas ilegíveis.
+
+Crie uma aplicação Mercado Pago para a plataforma e configure exatamente `https://saas-aen.vercel.app/api/mercado-pago/callback` como URL de redirecionamento. Configure o evento **payment** na URL `https://saas-aen.vercel.app/api/mercado-pago/webhook` e salve a assinatura secreta em `MP_WEBHOOK_SECRET`. Cada administrador conecta a conta vendedora da própria escola em **Mercado Pago**. O responsável financeiro gera um PIX após informar o CPF do pagador; o CPF é enviado ao provedor e não é armazenado neste banco. O webhook valida a assinatura e consulta o pagamento no provedor antes de registrar a baixa. Se um pagamento externo chegar quando a mensalidade já estiver quitada, a cobrança entra em **análise** para conferência da escola.
+
+Para WhatsApp, configure a Cloud API da Meta e um modelo **pt_BR aprovado sem parâmetros** em `WHATSAPP_REMINDER_TEMPLATE`. O responsável precisa autorizar o número cadastrado no portal. A secretaria envia cada lembrete manualmente a partir do painel, no máximo uma tentativa por responsável e mensalidade por dia. O registro `sent` indica aceitação pela API; não representa confirmação de entrega ou leitura. Não envie mensagens de teste a clientes reais.
+
+Revise os cadastros, o consentimento e os ambientes de teste do Mercado Pago e da Meta antes de habilitar produção. Sem credenciais dessas plataformas, o fluxo de cobrança e envio externo não pode ser verificado ponta a ponta.

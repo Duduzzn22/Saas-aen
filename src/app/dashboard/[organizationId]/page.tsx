@@ -20,6 +20,9 @@ export default async function OrganizationPage({ params }: { params: Promise<{ o
       {allowed && <Link className="card tile" href={`/dashboard/${organizationId}/portal`}><h2>Portal do responsável</h2><p>Aprovações de acesso e comunicados.</p><strong>Abrir →</strong></Link>}
       {allowed && <Link className="card tile" href={`/dashboard/${organizationId}/reposicoes`}><h2>Reposições</h2><p>Analise pedidos e escolha aulas com vagas.</p><strong>Abrir →</strong></Link>}
       {allowed && <Link className="card tile" href={`/dashboard/${organizationId}/experimentais`}><h2>Aulas experimentais</h2><p>Agende solicitações de novos alunos.</p><strong>Abrir →</strong></Link>}
+      {allowed && <Link className="card tile" href={`/dashboard/${organizationId}/indicadores`}><h2>Indicadores</h2><p>Receita, presença e atendimento em um só lugar.</p><strong>Abrir →</strong></Link>}
+      {allowed && <Link className="card tile" href={`/dashboard/${organizationId}/whatsapp`}><h2>WhatsApp</h2><p>Lembretes de mensalidades com consentimento.</p><strong>Abrir →</strong></Link>}
+      {membership.role === 'admin' && <Link className="card tile" href={`/dashboard/${organizationId}/mercado-pago`}><h2>Mercado Pago</h2><p>Conecte a conta da escola para receber PIX.</p><strong>Abrir →</strong></Link>}
     </div>
   </main>
 }

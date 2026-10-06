@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { requireGuardianOrganization } from '@/lib/auth'
 import { displayDate, todayInSaoPaulo } from '@/lib/operations'
 import { requestMakeup, requestTrial } from '@/app/experience'
+import { setWhatsAppConsent } from '@/app/whatsapp'
+import { createPixCharge } from '@/app/pix'
+import { adminClient,mpConfigured } from '@/lib/mercado-pago'
 
 const money = (cents: number) => (cents / 100).toLocaleString('pt-BR', {style:'currency',currency:'BRL'})
 const makeupStatus: Record<string,string> = {pending:'Aguardando análise',approved:'Aprovada',rejected:'Recusada'}
@@ -13,8 +16,10 @@ export default async function GuardianSchool({params,searchParams}: {
   const {organizationId: org} = await params
   const {erro,sucesso} = await searchParams
   const {supabase,guardians,userId} = await requireGuardianOrganization(org)
+  const {data:mpConnection} = mpConfigured() ? await adminClient().from('mp_connections')
+    .select('organization_id').eq('organization_id',org).maybeSingle() : {data:null}
   const guardianIds = guardians.map(g => g.id)
-  const [{data: school}, {data: relations}, {data: notices}, {data: trials}] = await Promise.all([
+  const [{data: school}, {data: relations}, {data: notices}, {data: trials}, {data: consents}] = await Promise.all([
     supabase.from('organizations').select('name').eq('id',org).maybeSingle(),
     supabase.from('student_guardians').select('student_id,is_financial,students(full_name,status)')
       .eq('organization_id',org).in('guardian_id',guardianIds),
@@ -22,6 +27,7 @@ export default async function GuardianSchool({params,searchParams}: {
       .eq('organization_id',org).eq('active',true).order('created_at',{ascending:false}).limit(15),
     supabase.from('trial_requests').select('id,prospect_name,status,preferred_date,session_id,class_sessions(lesson_date,starts_at)')
       .eq('organization_id',org).eq('requested_by',userId).order('created_at',{ascending:false}).limit(15),
+    supabase.from('whatsapp_consents').select('guardian_id,active').eq('organization_id',org).eq('user_id',userId),
   ])
   const studentIds = [...new Set(relations?.map(r => r.student_id) ?? [])]
   const today = todayInSaoPaulo()
@@ -46,12 +52,18 @@ export default async function GuardianSchool({params,searchParams}: {
   const levels = levelResult.data ?? []
   const invoices = invoiceResult.data ?? []
   const makeups = makeupResult.data ?? []
+  const {data:pixCharges}=invoices.length ? await supabase.from('pix_charges')
+    .select('id,invoice_id,status').eq('organization_id',org).in('invoice_id',invoices.map(i=>i.id))
+    .in('status',['creating','pending']).order('created_at',{ascending:false}) : {data:[]}
   const rel = (value: {name?:string} | {name?:string}[] | null) => Array.isArray(value) ? value[0]?.name : value?.name
   const lesson = (value: {lesson_date?:string;starts_at?:string} | {lesson_date?:string;starts_at?:string}[] | null) => Array.isArray(value) ? value[0] : value
   return <main className="shell"><header><div><Link className="back" href="/portal">← Escolas</Link><span className="eyebrow">Portal do responsável</span><h1>{school?.name || 'Minha escola'}</h1></div></header>
     {erro && <p role="alert" className="error">Não foi possível concluir a solicitação. Confira os dados e se a aula está elegível.</p>}
     {sucesso && <p className="success">Solicitação enviada.</p>}
     <section className="card"><h2>Comunicados</h2>{!notices?.length && <p>Nenhum comunicado ativo.</p>}<ul className="list">{notices?.map(n => <li key={n.id}><strong>{n.title}</strong><p>{n.body}</p><small>{displayDate(n.created_at.slice(0,10))}</small></li>)}</ul></section>
+    <section className="card spacing"><h2>Lembretes pelo WhatsApp</h2><p>Com sua autorização, a escola pode enviar lembretes de mensalidades vencidas ao telefone cadastrado. Você pode desativar a qualquer momento.</p>
+      {guardians.map(g => { const active = consents?.some(c=>c.guardian_id===g.id && c.active); return <div className="group-row" key={g.id}><span><strong>{g.full_name}</strong> · {g.phone || 'Peça à escola que cadastre um telefone'} · {active ? 'Autorizado' : 'Desativado'}</span><form action={setWhatsAppConsent.bind(null,org,g.id,!active)}><button className="secondary" disabled={!g.phone && !active}>{active ? 'Desativar' : 'Autorizar'}</button></form></div> })}
+    </section>
     <div className="grid spacing">{studentIds.map(studentId => {
       const relation = relations?.find(r => r.student_id === studentId)
       const student = Array.isArray(relation?.students) ? relation?.students[0] : relation?.students
@@ -75,7 +87,11 @@ export default async function GuardianSchool({params,searchParams}: {
         </form>)}{!eligible.length && <p>Nenhuma aula elegível para nova solicitação nos últimos 45 dias.</p>}</details>
         {relation?.is_financial && <details><summary>Mensalidades</summary><ul className="list">{invoices.filter(i => i.student_id === studentId).map(i => {
           const paid = i.invoice_payments?.filter(p => !p.voided_at).reduce((sum,p) => sum + p.amount_cents,0) ?? 0
-          return <li key={i.id}>{displayDate(i.due_on)} · {money(i.amount_cents)} · {i.status === 'void' ? 'Cancelada' : paid >= i.amount_cents ? 'Paga' : `Em aberto: ${money(i.amount_cents - paid)}`}</li>
+          const charge=pixCharges?.find(c=>c.invoice_id===i.id)
+          return <li key={i.id}>{displayDate(i.due_on)} · {money(i.amount_cents)} · {i.status === 'void' ? 'Cancelada' : paid >= i.amount_cents ? 'Paga' : `Em aberto: ${money(i.amount_cents - paid)}`}
+            {i.status==='open' && paid<i.amount_cents && charge?.status==='pending' && <p><Link className="back" href={`/portal/${org}/pix/${charge.id}`}>Ver PIX gerado →</Link></p>}
+            {i.status==='open' && paid<i.amount_cents && mpConnection && (!charge || charge.status==='creating') && <form className="form-row edit-form" action={createPixCharge.bind(null,org,i.id)}><label>CPF do pagador<input name="cpf" inputMode="numeric" pattern="[0-9. -]{11,18}" required placeholder="000.000.000-00" autoComplete="off" /></label><button>{charge ? 'Tentar novamente' : 'Gerar PIX'}</button></form>}
+          </li>
         })}</ul></details>}
       </section>
     })}</div>

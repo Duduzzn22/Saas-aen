@@ -10,6 +10,7 @@ Aplicação Next.js com Supabase para várias escolas, com dados separados por o
 - **Financeiro:** planos, mensalidades, pagamentos, inadimplência e relatórios.
 - **Experiência do cliente:** portal do responsável, pedidos de reposição, aulas experimentais e comunicados internos.
 - **Automação:** QR de presença, indicadores, conexão Mercado Pago por escola, PIX com conciliação e lembretes por WhatsApp autorizados.
+- **Equipe:** convites por e-mail confirmado para professores e recepção, com aceite pela própria conta e revogação de convites pendentes.
 
 O portal exige e-mail confirmado que corresponda ao cadastro do responsável. A escola aprova o pedido de acesso no painel; apenas o responsável financeiro vê mensalidades. Reposições e experimentais dependem da análise da secretaria e de vagas na aula escolhida. Uma aula com visita confirmada não pode ser cancelada antes de resolver a reserva. As aulas experimentais aparecem na lista da aula, mas sua conclusão é registrada no módulo de atendimento; o prospecto ainda não é aluno matriculado.
 
@@ -23,6 +24,8 @@ O portal exige e-mail confirmado que corresponda ao cadastro do responsável. A 
 Configure **Authentication → URL Configuration** do Supabase com o URL de produção `https://saas-aen.vercel.app` como Site URL e adicione os URLs de desenvolvimento necessários à lista de redirecionamentos. Isso garante que o link de confirmação do cadastro do responsável retorne ao ambiente certo.
 
 Para começar a usar o portal, cadastre o e-mail no registro do responsável, vincule-o ao aluno e peça ao responsável para criar uma conta com o mesmo endereço em `/cadastro`. Depois da confirmação por e-mail, ele solicita acesso em `/portal/acesso`; um administrador aprova em **Portal do responsável** no painel da escola.
+
+Para liberar acesso à equipe, um administrador abre **Equipe e acessos** no painel. O professor deve estar cadastrado, ativo e com e-mail; a recepção precisa apenas de nome e e-mail. A pessoa cria a conta em `/cadastro`, confirma o e-mail e aceita o convite em `/convites`. O convite é interno; compartilhe essas instruções pelo canal da escola. Convites pendentes podem ser revogados. Contas já vinculadas à mesma escola não podem aceitar outro convite. A automação de GitHub Actions executa tipos, lint e build em cada push e pull request.
 
 ## Verificação
 

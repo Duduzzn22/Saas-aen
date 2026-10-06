@@ -122,19 +122,3 @@ export async function linkGuardian(orgId: string, form: FormData) {
   if (error) redirect(`${url}?erro=vinculo`)
   redirect(`${url}?sucesso=1`)
 }
-
-export async function assignTeacherAccount(orgId: string, teacherId: string, form: FormData) {
-  if (![orgId, teacherId].every(id => uuid.safeParse(id).success)) redirect('/dashboard')
-  const url = `/dashboard/${orgId}/professores`
-  const { supabase, membership } = await requireOrganization(orgId)
-  if (membership.role !== 'admin') redirect(url)
-  const userId = uuid.safeParse(form.get('user_id'))
-  if (!userId.success) redirect(`${url}?erro=dados`)
-  const { data: teacherMember } = await supabase.from('memberships').select('user_id')
-    .eq('organization_id', orgId).eq('user_id', userId.data).eq('role', 'teacher').eq('active', true).maybeSingle()
-  if (!teacherMember) redirect(`${url}?erro=dados`)
-  const { data, error } = await supabase.from('teachers').update({ user_id: userId.data })
-    .eq('organization_id', orgId).eq('id', teacherId).select('id').maybeSingle()
-  if (error || !data) redirect(`${url}?erro=salvar`)
-  redirect(`${url}?sucesso=1`)
-}

@@ -14,6 +14,6 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <label>Senha<input name="password" type="password" autoComplete="current-password" required /></label>
       <button type="submit">Entrar</button>
     </form>
-    <p className="spacing">Responsável? <Link className="back" href="/cadastro">Criar conta</Link></p>
+    <p className="spacing">Ainda não tem conta? <Link className="back" href="/cadastro">Criar conta</Link></p>
   </section></main>
 }

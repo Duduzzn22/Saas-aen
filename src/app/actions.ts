@@ -28,7 +28,7 @@ export async function signUp(form: FormData) {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp(parsed.data)
   if (error) redirect('/cadastro?erro=salvar')
-  redirect(data.session ? '/portal/acesso' : '/login?cadastro=1')
+  redirect(data.session ? '/dashboard' : '/login?cadastro=1')
 }
 
 export async function signOut() {
